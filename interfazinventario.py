@@ -1,41 +1,32 @@
 import tkinter as tk
 from tkinter import ttk, messagebox 
 import time
-from bdd import BaseDatos  
+from bdd import BaseDatos 
 from inventario import Inventario 
-from producto import Producto  
-from venta import Venta  
+from producto import Producto 
+from venta import Venta 
 from ventas import Ventas
 
 class InterfazInventario:
     def __init__(self, root):
-        # Inicialización de la clase BaseDatos para manejar la base de datos
         self.base_datos = BaseDatos()
-        # Inicialización de la clase Inventario para manejar el inventario de productos
         self.inventario = Inventario()
-        # Crea una lista de Ventas
         self.ventas = Ventas()
-        # Carga de los productos desde la base de datos al inventario
         self.cargar_productos_desde_db()
         
-        # Usuario y rol actuales (se setean en el login)
         self.username = None
-        self.user_role = None  # 'Admin' o 'Usuario'
+        self.user_role = None 
         
-        # Configuración de la ventana principal de la aplicación
         self.root = root
         self.root.title("Sistema de Gestión de Inventarios")
         self.root.geometry("800x450")
 
-        # Configuración del notebook para mostrar pestañas
         self.notebook = ttk.Notebook(root)
         self.notebook.pack(expand=True, fill='both')
 
-        # Crear barra de menú y barra de herramientas
         self.crear_menu()
         self.crear_toolbar()
 
-        # Creación de las pestañas "Agregar Producto" , "Modificar Producto" , etc
         self.pagina_agregar = ttk.Frame(self.notebook)
         self.pagina_modificar = ttk.Frame(self.notebook)
         self.pagina_estadisticas = ttk.Frame(self.notebook)
@@ -45,24 +36,15 @@ class InterfazInventario:
         self.notebook.add(self.pagina_estadisticas, text='Estadisticas')
         self.notebook.add(self.pagina_ventas, text='Ventas')
 
-        # Creación de la interfaz para agregar un nuevo producto
         self.crear_interfaz_agregar_producto()
-        # Creación de la interfaz para modificar un producto existente
         self.crear_interfaz_modificar_producto()
-        # Creación del botón para eliminar un producto
-        self.crear_boton_eliminar_producto()  # Llamar a la función aquí
-        # Creación del botón para mostrar el informe de inventarios
+        self.crear_boton_eliminar_producto() 
         self.crear_boton_mostrar_informe()
-        # Creación de la interfaz de estadísticas
         self.crear_interfaz_estadisticas()
-        #Creación de la interfaz para cargar nueva venta
         self.crear_interfaz_agregar_venta()
-        #Creación del botón para mostrar ventas
         self.crear_boton_mostrar_ventas()
 
-        # Mostrar ventana de login al iniciar (modal)
         self.mostrar_ventana_login()
-        # Aplicar permisos según rol obtenido en el login
         self.aplicar_permisos_por_rol()
 
     def cargar_productos_desde_db(self):
@@ -96,19 +78,16 @@ class InterfazInventario:
         self.boton_modificar.grid(row=len(etiquetas_modificar) + 1, column=0, columnspan=2, pady=10)
 
     def crear_boton_eliminar_producto(self):
-        # Crea el botón de eliminar en la pestaña de modificación y guarda la referencia
         self.boton_eliminar = tk.Button(self.pagina_modificar,
-                                       text="Eliminar Producto",
-                                       command=self.eliminar_producto,
-                                       font=("Arial", 12),
-                                       bg="#FF5733",
-                                       fg="white")
-        # Ajusta la fila para que no choque con los demás controles
+                                         text="Eliminar Producto",
+                                         command=self.eliminar_producto,
+                                         font=("Arial", 12),
+                                         bg="#FF5733",
+                                         fg="white")
         try:
             row_index = 8
             self.boton_eliminar.grid(row=row_index, column=0, columnspan=2, pady=10)
         except Exception:
-            # Si la grilla falla por índices, empaqueta al final como fallback
             self.boton_eliminar.pack(pady=10)
 
     def crear_interfaz_estadisticas(self):
@@ -117,7 +96,6 @@ class InterfazInventario:
         valor_total_inventario = sum(producto.precio * producto.cantidad_stock for producto in self.inventario.productos)
         precio_promedio = valor_total_inventario / total_productos if total_productos > 0 else 0
         
-        # Crear etiquetas para mostrar las estadísticas
         etiquetas_estadisticas = [
             f"Cantidad productos distintos: {total_productos_distintos}",
             f"Cantidad Total de Productos: {total_productos}",
@@ -125,11 +103,9 @@ class InterfazInventario:
             f"Precio Promedio de Productos: ${precio_promedio:.2f}"
         ]
 
-        # Colocar las etiquetas en la página de estadísticas
         for i, etiqueta in enumerate(etiquetas_estadisticas):
             tk.Label(self.pagina_estadisticas, text=etiqueta, font=("Arial", 12)).grid(row=i, column=0, padx=10, pady=5, sticky='nsew')
         
-        # Programar la próxima actualización de las estadísticas en 1 segundo
         self.root.after(1000, self.crear_interfaz_estadisticas)
 
     def crear_menu(self):
@@ -156,7 +132,6 @@ class InterfazInventario:
         menubar.add_cascade(label="Ayuda", menu=ayuda_menu)
 
         self.root.config(menu=menubar)
-        # Guardar referencias por si se necesitan
         self._inventario_menu = inventario_menu
         self._archivo_menu = archivo_menu
 
@@ -187,8 +162,6 @@ class InterfazInventario:
         self.boton_mostrar_informe = tk.Button(self.root, text="Mostrar Ventas", command=self.mostrar_ventas, font=("Arial", 12), bg="#333", fg="white")
         self.boton_mostrar_informe.pack(pady=10)
     
-
-    
     def agregar_venta(self):
         try:
             cant_art = self.entries_agregar_ventas["Cantidad Artículos"].get()
@@ -205,24 +178,19 @@ class InterfazInventario:
         informe = self.ventas.generar_informe_ventas()
         mensaje = "\n\n".join(informe)
 
-        # Crear una ventana secundaria para mostrar el informe
         ventana_informe = tk.Toplevel(self.root)
         ventana_informe.title("Informe de Ventas")
         
-        # Crear un frame para contener el mensaje con desplazamiento
         frame_mensaje = tk.Frame(ventana_informe)
         frame_mensaje.pack(fill="both", expand=True)
 
-        # Crear un scrollbar para desplazarse verticalmente
         scrollbar = ttk.Scrollbar(frame_mensaje, orient="vertical")
         scrollbar.pack(side="right", fill="y")
 
-        # Crear un Text widget para mostrar el mensaje
         txt_informe = tk.Text(frame_mensaje, yscrollcommand=scrollbar.set)
         txt_informe.pack(fill="both", expand=True)
         txt_informe.insert("1.0", mensaje)
 
-        # Configurar el scrollbar para controlar el desplazamiento del Text widget
         scrollbar.config(command=txt_informe.yview)
 
     def agregar_producto(self):
@@ -260,7 +228,6 @@ class InterfazInventario:
         messagebox.showinfo("Acerca de", "Sistema de Gestión de Inventarios\nVersión 1.0")
 
     def modificar_producto(self):
-        # Requiere rol Admin
         if self.user_role != "Admin":
             messagebox.showerror("Error", "No tienes permisos para modificar (se requiere Admin).")
             return
@@ -302,7 +269,6 @@ class InterfazInventario:
         messagebox.showinfo("Sesión", "Se ha cerrado la sesión.")
 
     def eliminar_producto(self):
-        # Requiere rol Admin
         if self.user_role != "Admin":
             messagebox.showerror("Error", "No tienes permisos para eliminar (se requiere Admin).")
             return
@@ -321,7 +287,6 @@ class InterfazInventario:
             messagebox.showerror("Error", "Seleccione un producto para eliminar.")
 
     def mostrar_ventana_login(self):
-        # Ventana modal de login que solicita usuario y rol
         login = tk.Toplevel(self.root)
         login.title("Login")
         login.geometry("300x160")
@@ -350,7 +315,7 @@ class InterfazInventario:
 
         btn_login = tk.Button(login, text="Entrar", command=intentar_login)
         btn_login.pack(pady=8)
-        self.root.wait_window(login)  # Espera hasta que la ventana modal se cierre
+        self.root.wait_window(login) 
 
     def aplicar_permisos_por_rol(self):
         is_admin = (self.user_role == "Admin")
@@ -367,7 +332,6 @@ class InterfazInventario:
         self.boton_mostrar_informe.pack(pady=10)
 
     def mostrar_informe(self):
-        # Genera y muestra informe de inventarios en ventana con scrollbar
         informe = []
         try:
             informe = self.inventario.generar_informe()
@@ -387,5 +351,3 @@ class InterfazInventario:
         txt_informe.pack(fill="both", expand=True)
         txt_informe.insert("1.0", mensaje)
         scrollbar.config(command=txt_informe.yview)
-
-

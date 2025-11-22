@@ -1,91 +1,95 @@
-import sqlite3
-from tkinter import ttk, messagebox 
-from producto import Producto  # Importamos la clase Producto del módulo producto.py
+import mysql.connector
+from tkinter import messagebox 
+from producto import Producto 
 
-# Clase para manejar la base de datos
+MYSQL_CONFIG = {
+    'host': 'localhost',      
+    'user': 'root',           
+    'password': '', 
+    'database': 'sistema_inventario'
+}
+
 class BaseDatos:
     def __init__(self):
-        # Conexión a la base de datos SQLite
-        self.conexion = sqlite3.connect("inventario.db")
-        self.cursor = self.conexion.cursor()  # Creación de un cursor para ejecutar consultas SQL
-        self.crear_tabla()  # Llamada al método para crear la tabla si no existe
+        self.conexion = None
+        self.cursor = None
+        self._conectar()
 
-    def crear_tabla(self):
-        # Ejecución de la consulta SQL para crear la tabla de productos si no existe
-        self.cursor.execute('''
-            CREATE TABLE IF NOT EXISTS productos (
-                producto_id INTEGER PRIMARY KEY,
-                nombre TEXT NOT NULL,
-                descripcion TEXT,
-                precio REAL NOT NULL,
-                cantidad_stock INTEGER NOT NULL,
-                proveedor TEXT
-            )
-        ''')
-        self.conexion.commit()  # Confirmación de los cambios en la base de datos
+    def _conectar(self):
+        """Intenta establecer la conexión con MySQL."""
+        try:
+            self.conexion = mysql.connector.connect(**MYSQL_CONFIG)
+            self.cursor = self.conexion.cursor()
+        except mysql.connector.Error as err:
+            messagebox.showerror("Error de Conexión a MySQL", 
+                                 f"No se pudo conectar a la base de datos MySQL:\n{err}\n"
+                                 f"Por favor, revisa la configuración en base_datos_mysql.py y asegúrate de que MySQL esté activo.")
+            raise ConnectionError("Falló la conexión a MySQL.")
 
+    
     def obtener_productos(self):
-        self.cursor.execute("SELECT * FROM productos")
-        rows = self.cursor.fetchall()  # Obtención de todas las filas resultantes
-        return [Producto(*row) for row in rows] # Creación de objetos Producto a partir de las filas y retorno de una lista de productos
+        self.cursor.execute("SELECT id, nombre, descripcion, precio, cantidad_stock, proveedor_id FROM productos")
+        rows = self.cursor.fetchall() 
+        return [Producto(*row) for row in rows] 
 
     def agregar_producto(self, producto):
-        # Ejecución de la consulta SQL para insertar un nuevo producto en la tabla
-        self.cursor.execute('''
-            INSERT INTO productos (nombre, descripcion, precio, cantidad_stock, proveedor)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (producto.nombre, producto.descripcion, producto.precio, producto.cantidad_stock, producto.proveedor))
-        self.conexion.commit()  # Confirmación de los cambios en la base de datos
+        try:
+            self.cursor.execute('''
+                INSERT INTO productos (nombre, descripcion, precio, cantidad_stock, proveedor_id)
+                VALUES (%s, %s, %s, %s, %s)
+            ''', (producto.nombre, producto.descripcion, producto.precio, producto.cantidad_stock, producto.proveedor_id))
+            self.conexion.commit() 
+        except mysql.connector.Error as error:
+            messagebox.showerror("Error en base de datos", f"No se pudo agregar el producto: {error}")
 
     def eliminar_producto(self, producto):
-        self.cursor.execute('''
-             DELETE FROM productos WHERE producto_id=?               
-        ''', (producto.producto_id,))
-        self.conexion.commit()
-        
+        try:
+            self.cursor.execute('''
+                 DELETE FROM productos WHERE id=%s
+            ''', (producto.id,))
+            self.conexion.commit()
+        except mysql.connector.Error as error:
+            messagebox.showerror("Error en base de datos", f"No se pudo eliminar el producto: {error}")
+
     def actualizar_producto(self, producto):
         try:
-            # Ejecutar la consulta SQL para actualizar el producto
             self.cursor.execute('''
-                UPDATE productos SET nombre=?, descripcion=?, precio=?, cantidad_stock=?, proveedor=? WHERE producto_id=?
-            ''', (producto.nombre, producto.descripcion, producto.precio, producto.cantidad_stock, producto.proveedor, producto.producto_id))
-            self.conexion.commit()  # Confirmar los cambios en la base de datos
-        except sqlite3.Error as error:
-            # Manejar cualquier error de base de datos
+                 UPDATE productos SET nombre=%s, descripcion=%s, precio=%s, cantidad_stock=%s, proveedor_id=%s WHERE id=%s
+            ''', (producto.nombre, producto.descripcion, producto.precio, producto.cantidad_stock, producto.proveedor_id, producto.id))
+            self.conexion.commit() 
+        except mysql.connector.Error as error:
             messagebox.showerror("Error en base de datos", f"No se pudo actualizar el producto: {error}")
     
     def buscar_productos_por_nombre(self, nombre):
         try:
-            # Consulta SQL para buscar productos por coincidencia de nombre
-            self.cursor.execute("SELECT * FROM productos WHERE nombre LIKE ?", ('%' + nombre + '%',))
-            productos = self.cursor.fetchall()
-            self.conexion.commit()
-        except sqlite3.Error as error:
-            # Manejar cualquier error de base de datos
-            messagebox.showerror("Error en base de datos", f"No se pudo obtener el producto: {error}")
-        return productos
+            self.cursor.execute("SELECT id, nombre, descripcion, precio, cantidad_stock, proveedor_id FROM productos WHERE nombre LIKE %s", ('%' + nombre + '%',))
+            rows = self.cursor.fetchall()
+            return [Producto(*row) for row in rows]
+        except mysql.connector.Error as error:
+            messagebox.showerror("Error en base de datos", f"No se pudo buscar productos por nombre: {error}")
+            return []
     
-    def buscar_productos_por_proveedor(self, proveedor):
+    def buscar_productos_por_proveedor(self, proveedor_id):
         try:
-            # Consulta SQL para buscar productos por proveedor
-            self.cursor.execute("SELECT * FROM productos WHERE proveedor=?", (proveedor,))
-            productos = self.cursor.fetchall()
-            self.conexion.commit()
-        except sqlite3.Error as error:
-            # Manejar cualquier error de base de datos
-            messagebox.showerror("Error en base de datos", f"No se pudo obtener el producto: {error}")
-        return productos
+            self.cursor.execute("SELECT id, nombre, descripcion, precio, cantidad_stock, proveedor_id FROM productos WHERE proveedor_id=%s", (proveedor_id,))
+            rows = self.cursor.fetchall()
+            return [Producto(*row) for row in rows]
+        except mysql.connector.Error as error:
+            messagebox.showerror("Error en base de datos", f"No se pudo buscar productos por proveedor: {error}")
+            return []
 
     def buscar_producto_por_id(self, producto_id):
         try:
-            # Consulta SQL para buscar un producto por ID
-            self.cursor.execute("SELECT * FROM productos WHERE producto_id=?", (producto_id,))
-            producto = self.cursor.fetchone()
-            self.conexion.commit()
-        except sqlite3.Error as error:
-            # Manejar cualquier error de base de datos
-            messagebox.showerror("Error en base de datos", f"No se pudo obtener el producto: {error}")
-        return producto
+            self.cursor.execute("SELECT id, nombre, descripcion, precio, cantidad_stock, proveedor_id FROM productos WHERE id=%s", (producto_id,))
+            row = self.cursor.fetchone()
+            if row:
+                return Producto(*row)
+            return None
+        except mysql.connector.Error as error:
+            messagebox.showerror("Error en base de datos", f"No se pudo buscar producto por ID: {error}")
+            return None
     
     def cerrar_conexion(self):
-        self.conexion.close()  # Cierre de la conexión a la base de datos
+        if self.conexion and self.conexion.is_connected():
+            self.cursor.close()
+            self.conexion.close()
