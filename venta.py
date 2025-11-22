@@ -1,10 +1,9 @@
 from producto import Producto 
 
-# Clase para representar un artículo específico dentro de la venta (fila de venta_items)
 class VentaItem:
     def __init__(self, producto_id: int, nombre_producto: str, cantidad: int, precio_unitario: float):
         self.producto_id = producto_id
-        self.nombre_producto = nombre_producto # Para visualización
+        self.nombre_producto = nombre_producto 
         self.cantidad = cantidad
         self.precio_unitario = precio_unitario
         self.subtotal = self._calcular_subtotal()
@@ -22,30 +21,25 @@ class VentaItem:
             'subtotal': self.subtotal
         }
 
-# Clase para representar el encabezado de la venta (fila de ventas)
 class Venta:
     def __init__(self, medio_pago: str = 'Efectivo', usuario_id: int = None, items: list[VentaItem] = None, id_venta: int = None):
-        # Campos que se mapean directamente a la tabla 'ventas'
         self.id = id_venta
         self.medio_pago = medio_pago
         self.usuario_id = usuario_id
         
-        # Lista de objetos VentaItem
         self._items: list[VentaItem] = items if items is not None else []
         
-        # El total se calcula dinámicamente
         self._total = self._calcular_total()
 
     def agregar_item(self, item: VentaItem):
         """Añade un artículo a la lista de items de la venta."""
         self._items.append(item)
-        self._total = self._calcular_total() # Recalcula el total
+        self._total = self._calcular_total() 
 
     def _calcular_total(self) -> float:
         """Calcula el total general de la venta sumando los subtotales de todos los items."""
         return round(sum(item.subtotal for item in self._items), 2)
 
-    # PROPIEDAD TOTAL (Solo lectura, ya que se calcula)
     @property
     def total(self):
         """Retorna el total calculado de la venta."""
@@ -63,7 +57,7 @@ class Venta:
         self._items = nuevos_items
         self._total = self._calcular_total()
 
-    # PROPIEDAD CANTIDAD DE ARTÍCULOS (Solo lectura, se calcula)
+    # PROPIEDAD CANTIDAD DE ARTÍCULOS 
     @property
     def cant_articulos(self):
         """Retorna la suma de las cantidades de todos los items."""
@@ -84,8 +78,6 @@ class Venta:
             resumen += f"- {item.nombre_producto} (x{item.cantidad}) @ {item.precio_unitario} = {item.subtotal}\n"
         return resumen
 
-# Ejemplo de uso:
-# Si el precio_unitario viene de la BD al cargar el producto.
 if __name__ == '__main__':
     # 1. Crear los artículos de la venta (VentaItem)
     item1 = VentaItem(producto_id=1, nombre_producto="Pendrive 64GB", cantidad=2, precio_unitario=20000.0)

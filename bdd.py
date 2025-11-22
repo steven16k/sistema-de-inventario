@@ -89,6 +89,40 @@ class BaseDatos:
             messagebox.showerror("Error en base de datos", f"No se pudo buscar producto por ID: {error}")
             return None
     
+    def eliminar_producto(self, producto_id):
+        """Elimina un producto de la tabla 'productos' por su ID."""
+        try:
+            self.cursor.execute("DELETE FROM productos WHERE id=%s", (producto_id,))
+            self.conexion.commit()
+            return True
+        except mysql.connector.Error as error:
+            messagebox.showerror("Error en base de datos", 
+                                 f"No se pudo eliminar el producto (ID: {producto_id}). Razón: {error}")
+            return False
+        # --- MÉTODOS DE GESTIÓN DE PROVEEDORES ---
+
+    def obtener_proveedores(self):
+        """Retorna una lista de tuplas (id, nombre) de todos los proveedores."""
+        try:
+            self.cursor.execute("SELECT id, nombre FROM proveedores ORDER BY nombre")
+            return self.cursor.fetchall()
+        except mysql.connector.Error as error:
+            messagebox.showerror("Error en base de datos", f"No se pudo obtener la lista de proveedores: {error}")
+            # Retorna una lista vacía para evitar errores en la interfaz
+            return []
+
+    def agregar_proveedor(self, nombre, telefono, email, direccion):
+        """Inserta un nuevo proveedor en la base de datos."""
+        try:
+            self.cursor.execute('''
+                INSERT INTO proveedores (nombre, telefono, email, direccion)
+                VALUES (%s, %s, %s, %s)
+            ''', (nombre, telefono, email, direccion))
+            self.conexion.commit()
+            return True
+        except mysql.connector.Error as error:
+            messagebox.showerror("Error en base de datos", f"No se pudo agregar el proveedor: {error}")
+            return False
     def cerrar_conexion(self):
         if self.conexion and self.conexion.is_connected():
             self.cursor.close()
